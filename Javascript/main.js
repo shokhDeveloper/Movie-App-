@@ -1,6 +1,6 @@
 "use strict";
 const elForm = document.querySelector(".js-form");
-const elCategoriesSelect = elForm.querySelector(".js-categories-select");
+const elcategoriesSelect = elForm.querySelector(".js-categories-select");
 const elTemplateMovieItem =
   document.querySelector(".js-movie-template").content;
 const elList = document.querySelector(".movies__list");
@@ -15,13 +15,13 @@ const handleRenderMovies = (arr) => {
       clone.querySelector(".movies__item").dataset.id = movie.imdb_id
       clone.querySelector(
         ".js-movie-image"
-      ).src = `https://img.youtube.com/vi/${movie.ytid}/0.jpg`;
+      ).src = `https://img.youtube.com/vi/${movie.youtube_id}/0.jpg`;
       clone.querySelector(".js-movie-title").textContent =
-        typeof movie.Title === "string"
-          ? movie.Title.split(" ").slice(0, 3).join(" ")
-          : movie.Title;
+        typeof movie.title === "string"
+          ? movie.title.split(" ").slice(0, 3).join(" ")
+          : movie.title;
       clone.querySelector(".js-movie-text").textContent =
-        movie.Categories.split("|").slice(0, 3).join(", ");
+        movie.categories.length > 3 ? `${movie.categories.slice(0, 3).join(" ")} ...`: movie.categories.join(", ")
       clone.querySelector(".js-movie-rating").textContent = movie.imdb_rating;
       clone.querySelector(".js-movie-year").textContent = movie.movie_year;
       clone.querySelector(".js-movie-runtime").textContent = (
@@ -32,16 +32,16 @@ const handleRenderMovies = (arr) => {
         .split(".")
         .join(" hours ")
         .concat(" min");
-        clone.querySelector(".js-more-info").dataset.id = movie.imdb_rating
+        clone.querySelector(".js-more-info").dataset.id = movie.imdb_id
       elFragment.appendChild(clone);
     }
     elList.append(elFragment);
   }
 };
-const handleFilterCategories = (arr) => {
+const handleFiltercategories = (arr) => {
   let result = [];
   for (const movie of arr) {
-    const categories = movie.Categories.split("|");
+    const categories = movie.categories;
     for (const categorie of categories) {
         if (!result.includes(categorie)) {
           result.push(categorie);
@@ -52,7 +52,7 @@ const handleFilterCategories = (arr) => {
   return result;
 };
 const handleCreateOptions = () => {
-  const categories = handleFilterCategories(movies);
+  const categories = handleFiltercategories(movies);
   const fragmentOptions = document.createDocumentFragment();
   if (categories?.length) {
     for (const categorie of categories) {
@@ -61,19 +61,19 @@ const handleCreateOptions = () => {
       newOption.textContent = categorie;
       fragmentOptions.appendChild(newOption);
     }
-    elCategoriesSelect.appendChild(fragmentOptions);
+    elcategoriesSelect.appendChild(fragmentOptions);
   }
 };
 const sortObject = {
     az(a, b){
-        if(a.Title.toString() < b.Title.toString()){
+        if(a.title.toString() < b.title.toString()){
             return -1
         }else{
             return 1
         }
     },
     za(a, b){
-        if(a.Title.toString() > b.Title.toString()){
+        if(a.title.toString() > b.title.toString()){
             return -1
         }else{
             return 1
@@ -98,12 +98,12 @@ const handleClick = (evt) => {
     console.log(evt.target)
     if(evt.target.matches(".js-more-info")){
         const movieId = evt.target.dataset.id;
-        const movie = MOVIES.find(item => item.imdb_rating == movieId)
+        const movie = MOVIES.find(item => item.imdb_id == movieId)
         console.log(movie)
-        elModalBox.querySelector(".js-movie-iframe-image").src = `https://img.youtube.com/vi/${movie.ytid}/0.jpg`;
-        elModalBox.querySelector(".js-movie-modal-title").textContent = movie.Title   
+        elModalBox.querySelector(".js-movie-iframe-image").src = movie.movie_frame;
+        elModalBox.querySelector(".js-movie-modal-title").textContent = movie.title   
         elModalBox.querySelector(".js-movie-text").textContent =
-        movie.Categories.split("|").slice(0, 3).join(", ");
+        movie.categories.join(" ")
       elModalBox.querySelector(".js-movie-rating").textContent = movie.imdb_rating;
       elModalBox.querySelector(".js-movie-year").textContent = movie.movie_year;
       elModalBox.querySelector(".js-movie-runtime").textContent = (
@@ -120,23 +120,22 @@ const handleClick = (evt) => {
 }
 const handleSub = (evt) => {
   evt.preventDefault();
-  let filter = [];
   const formData = new FormData(evt.target);
   const regex = new RegExp(formData.get("search"), "gi");
-  if (formData.get("categorie") == "all") {
-    filter = MOVIES;
-  } else {
-    filter = MOVIES.filter((item) => item.Categories.split("|").includes(formData.get("categorie"))
-    );
-    console.log(filter)
+  
+  let filterMovies = movies.filter((item) => {
+      return (
+          (search.value == "" || item.title.match(regex)) && (categorie.value == "all" || item.categories.includes(categorie.value)) && (min.value == "" || item.movie_year > min.value) && (max.value == "" ||  min.value < max.value) 
+      )
+  });
+  if(filterMovies.length){
+    if(sort.value !== ""){
+      handleRenderMovies(filterMovies.sort(sortObject[sort.value]));
+    }else{
+      handleRenderMovies(filterMovies)
+    }
+    console.log(filterMovies)
   }
-  if (formData.get("search")){
-    filter = filter.filter((item) => item.Title?.toString()?.match(regex));
-  }
-  if (formData.get("sort")) {
-    filter = filter.sort(sortObject[formData.get("sort")])    
-  }
-  handleRenderMovies(filter);
 };
 elForm.addEventListener("submit", handleSub);
 elList.addEventListener("click", handleClick)
